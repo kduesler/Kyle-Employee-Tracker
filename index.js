@@ -15,23 +15,6 @@ const db = mysql.createConnection(
   console.log(`Connected to the employee_db database.`)
 );
 
-const addDepartmentQuestion = [
-  {
-    type: "input",
-    name: "deptName",
-    message: "Enter the name of the department you would like to add.",
-  },
-];
-
-// const updateEmployeeQuestions = [
-// {
-//   type: "list",
-//   name: "updateEmp",
-//   message: "For which employee would you like to update their role?",
-//   choices:
-// }
-// ]
-
 // 1. initalize app
 function init() {
   inquirer
@@ -122,6 +105,13 @@ function viewEmployees() {
 }
 
 function addDepartment() {
+  const addDepartmentQuestion = [
+    {
+      type: "input",
+      name: "deptName",
+      message: "Enter the name of the department you would like to add.",
+    },
+  ];
   inquirer.prompt(addDepartmentQuestion).then((answer) => {
     db.query(`INSERT INTO department (name) VALUES ("${answer.deptName}");`);
     viewDepartments();
@@ -167,43 +157,87 @@ function addEmployee() {
     "SELECT role.title AS name, role.id AS value FROM role;",
     function (err, results) {
       if (err) console.error(err);
-      const addEmployeeQuestions = [
-        {
-          type: "input",
-          name: "empFirstName",
-          message:
-            "Enter the first name of the employee you would like to add.",
-        },
-        {
-          type: "input",
-          name: "empLastName",
-          message: "Enter the last name of the employee you would like to add.",
-        },
-        {
-          type: "list",
-          name: "empRole",
-          message: "In which role is this employee?",
-          choices: results,
-        },
-        // {
-        //   type: "list",
-        //   name: "empManager",
-        //   message: "Who is this employee's manager?",
-        //   choices:
-        // },
-      ];
-      inquirer.prompt(addEmployeeQuestions).then((answer) => {
-        db.query(
-          `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ("${answer.empFirstName}", "${answer.empLastName}", "${answer.empRole}", 1);`
-        );
-        viewEmployees();
-      });
+      db.query(
+        'SELECT CONCAT(employee.first_name, " ", employee.last_name) AS name, employee.id AS value FROM employee;',
+        function (err, results1) {
+          if (err) console.error(err);
+          const addEmployeeQuestions = [
+            {
+              type: "input",
+              name: "empFirstName",
+              message:
+                "Enter the first name of the employee you would like to add.",
+            },
+            {
+              type: "input",
+              name: "empLastName",
+              message:
+                "Enter the last name of the employee you would like to add.",
+            },
+            {
+              type: "list",
+              name: "empRole",
+              message: "In which role is this employee?",
+              choices: results,
+            },
+            {
+              type: "list",
+              name: "empManager",
+              message: "Who is this employee's manager?",
+              choices: results1,
+            },
+          ];
+          inquirer.prompt(addEmployeeQuestions).then((answer) => {
+            db.query(
+              `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ("${answer.empFirstName}", "${answer.empLastName}", "${answer.empRole}", "${answer.empManager}");`
+            );
+            viewEmployees();
+          });
+        }
+      );
     }
   );
 }
 
 function updateEmployeeRole() {
-  
+  db.query(
+    'SELECT CONCAT(employee.first_name, " ", employee.last_name) AS name, employee.id AS value FROM employee;',
+    function (err, results) {
+      if (err) console.error(err);
+
+      db.query(
+        "SELECT role.title AS name, role.id AS value FROM role;",
+        function (err, results1) {
+          if (err) console.error(err);
+
+          const updateEmployeeQuestions = [
+            {
+              type: "list",
+              name: "updateEmp",
+              message:
+                "For which employee would you like to update their role?",
+              choices: results,
+            },
+            {
+              type: "list",
+              name: "updateRole",
+              message: "Which role do you want to give this employee?",
+              choices: results1,
+            },
+          ];
+          inquirer.prompt(updateEmployeeQuestions).then((answer) => {
+            db.query(
+              `UPDATE employee
+              SET role_id = ${answer.updateRole}
+              WHERE employee.id = ${answer.updateEmp};`
+            );
+            viewEmployees();
+          });
+        }
+      );
+    }
+  );
 }
+
 
 init();

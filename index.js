@@ -15,19 +15,6 @@ const db = mysql.createConnection(
   console.log(`Connected to the employee_db database.`)
 );
 
-// use mysql query results to create a JSON array for choices for role question
-function createRoleListFunct() {
-  // db.query("SELECT role.title FROM role FOR JSON AUTO", function (err, results) {
-  //   console.log(results);
-  // });
-  db.query("SELECT role.title FROM role", function (err, results) {
-    console.log(results);
-  }); 
-}
-
-createRoleList = createRoleListFunct();
-createRoleList
-
 const addDepartmentQuestion = [
   {
     type: "input",
@@ -36,59 +23,12 @@ const addDepartmentQuestion = [
   },
 ];
 
-const addRoleQuestions = [
-  {
-    type: "input",
-    name: "roleName",
-    message: "Enter the name of the role you would like to add.",
-  },
-  {
-    type: "input",
-    name: "roleSalary",
-    message: "Enter the salary of the role you would like to add.",
-  },
-  {
-    type: "input",
-    name: "roleDept",
-    message: "Enter the department of the role you would like to add.",
-  },
-];
-
-
-
-const addEmployeeQuestions = [
-  {
-    type: "input",
-    name: "empFirstName",
-    message: "Enter the first name of the employee you would like to add.",
-  },
-  {
-    type: "input",
-    name: "empLastName",
-    message: "Enter the last name of the employee you would like to add.",
-  },
-  {
-    type: "list",
-    name: "empRole",
-    message: "In which role is this employee?",
-    choices: createRoleList 
-  },
-  // {
-  //   type: "list",
-  //   name: "empManager",
-  //   message: "Who is this employee's manager?",
-  //   choices: 
-  // },
-];
-
-addEmployee();
-
 // const updateEmployeeQuestions = [
 // {
 //   type: "list",
 //   name: "updateEmp",
 //   message: "For which employee would you like to update their role?",
-//   choices: 
+//   choices:
 // }
 // ]
 
@@ -104,22 +44,12 @@ function init() {
           "view all departments.",
           "view all roles.",
           "view all employees.",
-          "view employees by manager.",
-          "view employees by role.",
-          "view employees by department.",
           new inquirer.Separator(),
           "add a department.",
           "add a role.",
           "add an employee.",
           new inquirer.Separator(),
           "update an employee's role.",
-          "update an employee's manager.",
-          new inquirer.Separator(),
-          "delete a department.",
-          "delete a role.",
-          "delete an employee.",
-          new inquirer.Separator(),
-          "view the total utilized budget of a department.",
           new inquirer.Separator(),
         ],
       },
@@ -154,7 +84,7 @@ function init() {
         case "add an employee.":
           addEmployee();
           break;
-          case "update an employee's role.":
+        case "update an employee's role.":
           updateEmployeeRole();
           break;
         default:
@@ -191,27 +121,6 @@ function viewEmployees() {
   );
 }
 
-// function viewEmployeesByManager() {
-//   db.query("SELECT ;", function (err, results) {
-//     console.table(results);
-//     init();
-//   });
-// }
-
-// function viewEmployeesByRole() {
-//   db.query("SELECT ;", function (err, results) {
-//     console.table(results);
-//     init();
-//   });
-// }
-
-// function viewEmployeesByDepartment() {
-//   db.query("SELECT ;", function (err, results) {
-//     console.table(results);
-//     init();
-//   });
-// }
-
 function addDepartment() {
   inquirer.prompt(addDepartmentQuestion).then((answer) => {
     db.query(`INSERT INTO department (name) VALUES ("${answer.deptName}");`);
@@ -219,29 +128,82 @@ function addDepartment() {
   });
 }
 
-// add Department logic to show department in question but insert department_id into role TABLE
 function addRole() {
-  inquirer.prompt(addRoleQuestions).then((answer) => {
-    db.query(
-      `INSERT INTO role(title, salary, department_id) VALUES ("${answer.roleName}", "${answer.roleSalary}", )`
-    );
-    viewRoles();
-  });
+  db.query(
+    "SELECT department.name AS name, department.id AS value FROM department;",
+    function (err, results) {
+      if (err) console.error(err);
+      const addRoleQuestions = [
+        {
+          type: "input",
+          name: "roleName",
+          message: "Enter the name of the role you would like to add.",
+        },
+        {
+          type: "input",
+          name: "roleSalary",
+          message: "Enter the salary of the role you would like to add.",
+        },
+        {
+          type: "list",
+          name: "roleDept",
+          message: "In which department in this role?",
+          choices: results,
+        },
+      ];
+      inquirer.prompt(addRoleQuestions).then((answer) => {
+        db.query(
+          `INSERT INTO role (title, salary, department_id) VALUES ("${answer.roleName}", "${answer.roleSalary}", "${answer.roleDept}");`
+        );
+        viewRoles();
+      });
+    }
+  );
 }
 
-// add role logic to show role in question but insert role_id into employee TABlE
 //add manger logic to show manager in question but insert manager_id into employee TABLE
 function addEmployee() {
-  inquirer.prompt(addEmployeeQuestions).then((answer) => {
-    db.query(
-      `INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES ("${answer.empFirstName}", "${answer.empLastName}", )`
-    );
-    viewEmployees();
-  });
+  db.query(
+    "SELECT role.title AS name, role.id AS value FROM role;",
+    function (err, results) {
+      if (err) console.error(err);
+      const addEmployeeQuestions = [
+        {
+          type: "input",
+          name: "empFirstName",
+          message:
+            "Enter the first name of the employee you would like to add.",
+        },
+        {
+          type: "input",
+          name: "empLastName",
+          message: "Enter the last name of the employee you would like to add.",
+        },
+        {
+          type: "list",
+          name: "empRole",
+          message: "In which role is this employee?",
+          choices: results,
+        },
+        // {
+        //   type: "list",
+        //   name: "empManager",
+        //   message: "Who is this employee's manager?",
+        //   choices:
+        // },
+      ];
+      inquirer.prompt(addEmployeeQuestions).then((answer) => {
+        db.query(
+          `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ("${answer.empFirstName}", "${answer.empLastName}", "${answer.empRole}", 1);`
+        );
+        viewEmployees();
+      });
+    }
+  );
 }
 
 function updateEmployeeRole() {
   
 }
 
-// init();
+init();

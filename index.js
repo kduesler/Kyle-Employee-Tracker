@@ -2,7 +2,6 @@ const inquirer = require("inquirer");
 const mysql = require("mysql2");
 require("console.table");
 
-// Connect to database
 const db = mysql.createConnection(
   {
     host: "localhost",
@@ -15,7 +14,6 @@ const db = mysql.createConnection(
   console.log(`Connected to the employee_db database.`)
 );
 
-// 1. initalize app
 function init() {
   inquirer
     .prompt([
@@ -33,12 +31,12 @@ function init() {
           "add an employee.",
           new inquirer.Separator(),
           "update an employee's role.",
+          "update an employee's manager.",
           new inquirer.Separator(),
         ],
       },
     ])
     .then((answer) => {
-      // 2. choose options
       switch (answer.init) {
         case "view all departments.":
           viewDepartments();
@@ -70,23 +68,26 @@ function init() {
         case "update an employee's role.":
           updateEmployeeRole();
           break;
+        case "update an employee's manager.":
+          updateEmployeeManager();
         default:
       }
     });
 }
 
-// 3. create functions for each option
-
 function viewDepartments() {
-  db.query("SELECT * FROM department", function (err, results) {
-    console.table(results);
-    init();
-  });
+  db.query(
+    "SELECT department.id AS 'Department ID', department.name AS 'Department Name' from department;",
+    function (err, results) {
+      console.table(results);
+      init();
+    }
+  );
 }
 
 function viewRoles() {
   db.query(
-    "SELECT role.title, role.id, department.name, role.salary FROM role JOIN department ON department_id=department.id;",
+    "SELECT role.title AS 'Role', role.id AS 'Role ID', department.name AS 'Department', role.salary AS 'Salary' FROM role JOIN department ON department_id=department.id;",
     function (err, results) {
       console.table(results);
       init();
@@ -96,7 +97,7 @@ function viewRoles() {
 
 function viewEmployees() {
   db.query(
-    "SELECT employee.id AS 'EID', employee.first_name AS 'First Name', employee.last_name AS 'Last Name', role.title AS 'Title', department.name AS 'Department Name', role.salary AS 'Salary', employee.manager_id FROM employee JOIN role ON role_id=role.id JOIN department on department_id=department.id;",
+    "SELECT employee.id AS 'EID', employee.first_name AS 'First Name', employee.last_name AS 'Last Name', role.title AS 'Role', department.name AS 'Department', role.salary AS 'Salary', employee.manager_id AS 'Manager ID' FROM employee JOIN role ON role_id=role.id JOIN department on department_id=department.id;",
     function (err, results) {
       console.table(results);
       init();
@@ -151,7 +152,6 @@ function addRole() {
   );
 }
 
-//add manger logic to show manager in question but insert manager_id into employee TABLE
 function addEmployee() {
   db.query(
     "SELECT role.title AS name, role.id AS value FROM role;",
@@ -239,5 +239,36 @@ function updateEmployeeRole() {
   );
 }
 
+function updateEmployeeManager() {
+  db.query(
+    'SELECT CONCAT(employee.first_name, " ", employee.last_name) AS name, employee.id AS value FROM employee;',
+    function (err, results) {
+      if (err) console.error(err);
+
+      const updateEmployeeManagerQuestions = [
+        {
+          type: "list",
+          name: "updateEmpMan",
+          message: "For which employee would you like to update their manager?",
+          choices: results,
+        },
+        {
+          type: "list",
+          name: "updateMan",
+          message: "Who is this employee's new manager?",
+          choices: results,
+        },
+      ];
+      inquirer.prompt(updateEmployeeManagerQuestions).then((answer) => {
+        db.query(
+          `UPDATE employee
+              SET manager_id = ${answer.updateMan}
+              WHERE employee.id = ${answer.updateEmpMan};`
+        );
+        viewEmployees();
+      });
+    }
+  );
+}
 
 init();

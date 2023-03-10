@@ -26,12 +26,20 @@ function init() {
           "view all roles.",
           "view all employees.",
           new inquirer.Separator(),
+          "view employees by manager.",
+          "view employees by role.",
+          "view employees by department.",
+          new inquirer.Separator(),
           "add a department.",
           "add a role.",
           "add an employee.",
           new inquirer.Separator(),
           "update an employee's role.",
           "update an employee's manager.",
+          new inquirer.Separator(),
+          "delete a department, role, or employee.",
+          new inquirer.Separator(),
+          "view the total utilized budget of a department.",
           new inquirer.Separator(),
         ],
       },
@@ -70,6 +78,13 @@ function init() {
           break;
         case "update an employee's manager.":
           updateEmployeeManager();
+          break;
+        case "delete a department, role, or employee.":
+          deleteItem();
+          break;
+        case "view the total utilized budget of a department.":
+          viewDeptBudget();
+          break;
         default:
       }
     });
@@ -162,7 +177,7 @@ function addEmployee() {
         function (err, results1) {
           if (err) console.error(err);
           const addEmployeeQuestions = [
-            {
+            { 
               type: "input",
               name: "empFirstName",
               message:
@@ -271,7 +286,202 @@ function updateEmployeeManager() {
   );
 }
 
+function viewEmployeesByManager() {
+  db.query(
+    'SELECT CONCAT(employee.first_name, " ", employee.last_name) AS name, employee.id AS value FROM employee WHERE ISNULL(employee.manager_id);',
+    function (err, results) {
+      if (err) console.error(err);
 
+      const viewEmployeeByManagerQuestion = [
+        {
+          type: "list",
+          name: "viewByMan",
+          message: "For which manager would you like to view their employees?",
+          choices: results,
+        },
+      ];
+      inquirer.prompt(viewEmployeeByManagerQuestion).then((answer) => {
+        db.query(
+          `SELECT employee.id AS "EID", employee.first_name AS "First Name", employee.last_name AS "Last Name", role.title AS "Role", department.name AS "Department", role.salary AS "Salary", employee.manager_id AS "Manager ID" FROM employee JOIN role ON role_id=role.id JOIN department on department_id=department.id WHERE employee.manager_id=${answer.viewByMan};`,
+          function (err, results) {
+            console.table(results);
+            init();
+          }
+        );
+      });
+    }
+  );
+}
 
+function viewEmployeesByRole() {
+  db.query(
+    "SELECT role.title AS name, role.id AS value FROM role;",
+    function (err, results) {
+      if (err) console.error(err);
+
+      const viewEmployeeByRoleQuestion = [
+        {
+          type: "list",
+          name: "viewByRole",
+          message: "For which role would you like to view its employees?",
+          choices: results,
+        },
+      ];
+      inquirer.prompt(viewEmployeeByRoleQuestion).then((answer) => {
+        db.query(
+          `SELECT employee.id AS "EID", employee.first_name AS "First Name", employee.last_name AS "Last Name", role.title AS "Role", department.name AS "Department", role.salary AS "Salary", employee.manager_id AS "Manager ID" FROM employee JOIN role ON role_id=role.id JOIN department on department_id=department.id WHERE employee.role_id=${answer.viewByRole};`,
+          function (err, results) {
+            console.table(results);
+            init();
+          }
+        );
+      });
+    }
+  );
+}
+
+function viewEmployeesByDepartment() {
+  db.query(
+    "SELECT department.name AS name, department.id AS value FROM department;",
+    function (err, results) {
+      if (err) console.error(err);
+
+      const viewEmployeeByDeptQuestion = [
+        {
+          type: "list",
+          name: "viewByDept",
+          message: "For which department would you like to view its employees?",
+          choices: results,
+        },
+      ];
+      inquirer.prompt(viewEmployeeByDeptQuestion).then((answer) => {
+        db.query(
+          `SELECT employee.id AS "EID", employee.first_name AS "First Name", employee.last_name AS "Last Name", role.title AS "Role", department.name AS "Department", role.salary AS "Salary", employee.manager_id AS "Manager ID" FROM employee JOIN role ON role_id=role.id JOIN department on department_id=department.id WHERE role.department_id=${answer.viewByDept};`,
+          function (err, results) {
+            console.table(results);
+            init();
+          }
+        );
+      });
+    }
+  );
+}
+
+function deleteItem() {
+  inquirer
+    .prompt([
+      {
+        type: "list",
+        name: "deleteWhat",
+        message: "I want to delete ",
+        choices: ["a department.", "a role.", "an employee."],
+      },
+    ])
+    .then((answer) => {
+      switch (answer.deleteWhat) {
+        case "a department.":
+          deleteDept();
+          break;
+        case "a role.":
+          deleteRole();
+          break;
+        case "an employee.":
+          deleteEmp();
+          break;
+      }
+    });
+}
+
+function deleteDept() {
+  db.query(
+    "SELECT department.id AS value, department.name AS name from department;",
+    function (err, results) {
+      if (err) console.error(err);
+      const deleteDeptQuestion = [
+        {
+          type: "list",
+          name: "deleteDept",
+          message: "Which department do you want to delete?",
+          choices: results,
+        },
+      ];
+      inquirer.prompt(deleteDeptQuestion).then((answer) => {
+        db.query(
+          `DELETE FROM department WHERE department.id=${answer.deleteDept};`
+        );
+        viewDepartments();
+      });
+    }
+  );
+}
+
+function deleteRole() {
+  db.query(
+    "SELECT role.title AS name, role.id AS value FROM role;",
+    function (err, results) {
+      if (err) console.error(err);
+      const deleteRoleQuestion = [
+        {
+          type: "list",
+          name: "deleteRole",
+          message: "Which role do you want to delete?",
+          choices: results,
+        },
+      ];
+      inquirer.prompt(deleteRoleQuestion).then((answer) => {
+        db.query(`DELETE FROM role WHERE role.id=${answer.deleteRole};`);
+        viewRoles();
+      });
+    }
+  );
+}
+
+function deleteEmp() {
+  db.query(
+    'SELECT CONCAT(employee.first_name, " ", employee.last_name) AS name, employee.id AS value FROM employee;',
+    function (err, results) {
+      if (err) console.error(err);
+
+      const deleteEmpQuestion = [
+        {
+          type: "list",
+          name: "deleteEmp",
+          message: "Which employee do you want to delete?",
+          choices: results,
+        },
+      ];
+      inquirer.prompt(deleteEmpQuestion).then((answer) => {
+        db.query(`DELETE FROM employee WHERE employee.id=${answer.deleteEmp};`);
+        viewEmployees();
+      });
+    }
+  );
+}
+
+function viewDeptBudget() {
+  db.query(
+    "SELECT department.id AS value, department.name AS name from department;",
+    function (err, results) {
+      if (err) console.error(err);
+      const DeptBudgetQuestion = [
+        {
+          type: "list",
+          name: "deptBud",
+          message: "For which department do you want to view its budget?",
+          choices: results,
+        },
+      ];
+      inquirer.prompt(DeptBudgetQuestion).then((answer) => {
+        db.query(
+          `SELECT SUM(role.salary) AS 'Department Budget' FROM role WHERE role.department_id=${answer.deptBud};`,
+          function (err, results) {
+            console.table(results);
+            init();
+          }
+        );
+      });
+    }
+  );
+}
 
 init();

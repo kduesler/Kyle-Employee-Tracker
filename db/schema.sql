@@ -33,4 +33,10 @@ CREATE Table employee (
     ON DELETE SET NULL
  );
 
-SELECT employee.id AS 'EID', employee.first_name AS 'First Name', employee.last_name AS 'Last Name', role.title AS 'Title', department.name AS 'Department Name', role.salary AS 'Salary', CONCAT(employee.manager_id FROM employee JOIN role ON role_id=role.id JOIN department on department_id=department.id;
+
+
+SELECT CONCAT(employee.first_name, " ", employee.last_name) AS name, employee.id AS value FROM employee WHERE ISNULL(employee.manager_id);
+
+SELECT employee.id AS 'EID', employee.first_name AS 'First Name', employee.last_name AS 'Last Name', role.title AS 'Role', department.name AS 'Department', role.salary AS 'Salary', employee.manager_id AS 'Manager ID' FROM employee JOIN role ON role_id=role.id JOIN department on department_id=department.id WHERE employee.manager_id=1;
+
+SELECT employee.id AS "EID", employee.first_name AS "First Name", employee.last_name AS "Last Name", role.title AS "Role", department.name AS "Department", role.salary AS "Salary", employee.manager_id AS "Manager ID" FROM employee JOIN role ON role_id=role.id JOIN department on department_id=department.id WHERE employee.manager_id=5;

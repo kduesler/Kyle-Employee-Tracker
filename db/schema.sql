@@ -35,5 +35,3 @@ CREATE Table employee (
 
 
 
-INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ("Terry", "Blake", 4, NULL);
-
